@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "diploma"
+version = "0.1.0"
+description = ""
+authors = ["gleb165 <83755952+gleb165@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.110.0"
+pydantic = "^2.6.4"
+beanie = "^1.25.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
