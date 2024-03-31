@@ -27,7 +27,7 @@ async def retrieve_one_mushroom(id: PydanticObjectId) -> Order:
 @Order_router.post('/')
 async def create_mushroom(body: Order) -> dict:
     await Order_database.save(body)
-    return {'massage': 'your mushrooms correct create'}
+    return {'message': 'your mushrooms correct create'}
 
 
 @Order_router.put('/{id}', response_model=Order)
@@ -45,7 +45,7 @@ async def update_mushroom(body: OrderUpdate, id: PydanticObjectId) -> Order:
 async def delete_mushroom(id: PydanticObjectId) -> dict:
     delete = await Order_database.delete(id)
     if delete:
-        return {'massage': 'your mushrooms correct delete'}
+        return {'message': 'your mushrooms correct delete'}
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="mushroom with supplied ID does not exist")

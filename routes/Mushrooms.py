@@ -1,11 +1,27 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from models.Mushrooms import Mushroom, MushroomUpdate
 from beanie import PydanticObjectId
 from database.connection import Database
+from fastapi.responses import FileResponse
+import io
+import torch.nn as nn
+import torch
+from torchvision import models, transforms
+import numpy as np
+import matplotlib.pyplot as plt
+import base64
+from PIL import Image
 
 
 mushrooms_router = APIRouter(tags=["Mushroom"])
 mushrooms_database = Database(Mushroom)
+
+
+class ToRGB(object):
+    def __call__(self, pic):
+        if pic.mode != 'RGB':
+            pic = pic.convert('RGB')
+        return pic
 
 
 @mushrooms_router.get("/", response_model=list[Mushroom])
@@ -25,9 +41,56 @@ async def retrieve_one_mushroom(id: PydanticObjectId) -> Mushroom:
 
 
 @mushrooms_router.post('/')
-async def create_mushroom(body: Mushroom) -> dict:
-    await mushrooms_database.save(body)
-    return {'massage': 'your mushrooms correct create'}
+async def create_mushroom(id_user: PydanticObjectId = Form(...), name: str = Form(...), price: int = Form(...),
+                          description: str = Form(...), image: UploadFile = File(...)):
+
+    contents = await image.read()
+    pil_image = Image.open(io.BytesIO(contents))
+
+    # Load the saved model
+    model = models.resnet18(pretrained=True)
+    model.fc = nn.Linear(model.fc.in_features, 1000)  # Adjust to match the original model's output units
+    model.load_state_dict(torch.load('model2good'))
+    model.eval()
+
+    # Create a new model with the correct final layer
+    new_model = models.resnet18(pretrained=True)
+    new_model.fc = nn.Linear(new_model.fc.in_features, 2)  # Adjust to match the desired output units
+
+    # Copy the weights and biases from the loaded model to the new model
+    new_model.fc.weight.data = model.fc.weight.data[0:2]  # Copy only the first 2 output units
+    new_model.fc.bias.data = model.fc.bias.data[0:2]
+    # Load and preprocess the unseen image
+    preprocess = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        ToRGB(),  # Custom transform to convert PNG images to RGB
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    input_tensor = preprocess(pil_image)
+    input_batch = input_tensor.unsqueeze(0)
+    # Perform inference
+    with torch.no_grad():
+        output = model(input_batch)
+
+    # Get the predicted class
+    _, predicted_class = output.max(1)
+    predict = bool(predicted_class)
+    if predict is False:
+        body = Mushroom(
+            id_user=id_user,
+            name=name,
+            price=price,
+            predict=predict,
+            description=description,  # Assuming no description available
+            image=image.filename,
+        )
+        await mushrooms_database.save(body)
+        return {'message': 'your mushrooms correct create'}
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="mushroom is poison")
 
 
 @mushrooms_router.put('/{id}', response_model=Mushroom)
@@ -45,7 +108,7 @@ async def update_mushroom(body: MushroomUpdate, id: PydanticObjectId) -> Mushroo
 async def delete_mushroom(id: PydanticObjectId) -> dict:
     delete = await mushrooms_database.delete(id)
     if delete:
-        return {'massage': 'your mushrooms correct delete'}
+        return {'message': 'your mushrooms correct delete'}
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="mushroom with supplied ID does not exist")

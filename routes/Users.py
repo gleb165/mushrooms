@@ -28,14 +28,14 @@ async def retrieve_one_mushroom(id: PydanticObjectId) -> User:
 @user_router.post('/')
 async def create_mushroom(body: User) -> dict:
     await user_database.save(body)
-    return {'massage': 'your User correct create'}
+    return {'message': 'your User correct create'}
 
 
 @user_router.delete('/{id}')
 async def delete_mushroom(id: PydanticObjectId) -> dict:
     delete = await user_database.delete(id)
     if delete:
-        return {'massage': 'your mushrooms correct delete'}
+        return {'message': 'your mushrooms correct delete'}
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="User with supplied ID does not exist")
