@@ -5,7 +5,7 @@ from beanie import Document
 class User(Document):
     email: EmailStr
     password: str
-    role: int | None = None
+    role: bool | None = None
 
     class Config:
         json_schema_extra = {
@@ -19,10 +19,13 @@ class User(Document):
         name = "users"
 
 
-class UserSignIn(BaseModel):
-    email: EmailStr
-    password: str
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
+
+class TokenData(BaseModel):
+    email: str | None = None
 
 
 

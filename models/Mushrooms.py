@@ -5,7 +5,7 @@ import base64
 
 
 class Mushroom(Document):
-    id_user: PydanticObjectId
+    creator: str
     name: str
     price: int
     predict: bool

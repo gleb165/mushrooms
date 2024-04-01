@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form,Depends
+from typing import Annotated
 from models.Mushrooms import Mushroom, MushroomUpdate
+from models.Users import User
 from beanie import PydanticObjectId
 from database.connection import Database
 from fastapi.responses import FileResponse
@@ -7,10 +9,12 @@ import io
 import torch.nn as nn
 import torch
 from torchvision import models, transforms
+from auth.authenticate import get_current_user
 import numpy as np
 import matplotlib.pyplot as plt
 import base64
 from PIL import Image
+
 
 
 mushrooms_router = APIRouter(tags=["Mushroom"])
@@ -29,9 +33,11 @@ async def retrieve_all_mushroom() -> list[Mushroom]:
     return await mushrooms_database.get_all()
 
 
-@mushrooms_router.get("/{id}", response_model=Mushroom)
-async def retrieve_one_mushroom(id: PydanticObjectId) -> Mushroom:
-    mushroom = await mushrooms_database.get(id)
+@mushrooms_router.get("/mushroom", response_model=list[Mushroom])
+async def retrieve_one_mushroom(current_user: Annotated[User, Depends(get_current_user)]) -> list[Mushroom]:
+    mushroom = await Mushroom.find({'creator': current_user.email}).to_list()
+    print(mushroom)
+
     if not mushroom:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -41,8 +47,9 @@ async def retrieve_one_mushroom(id: PydanticObjectId) -> Mushroom:
 
 
 @mushrooms_router.post('/')
-async def create_mushroom(id_user: PydanticObjectId = Form(...), name: str = Form(...), price: int = Form(...),
-                          description: str = Form(...), image: UploadFile = File(...)):
+async def create_mushroom(current_user: Annotated[User, Depends(get_current_user)], name: str = Form(...),
+                          price: int = Form(...), description: str = Form(...), image: UploadFile = File(...)):
+
 
     contents = await image.read()
     pil_image = Image.open(io.BytesIO(contents))
@@ -79,7 +86,7 @@ async def create_mushroom(id_user: PydanticObjectId = Form(...), name: str = For
     predict = bool(predicted_class)
     if predict is False:
         body = Mushroom(
-            id_user=id_user,
+            creator=current_user.email,
             name=name,
             price=price,
             predict=predict,
