@@ -1,7 +1,11 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
+from typing import Annotated
+from models.Users import User
+from models.Mushrooms import Mushroom
 from models.Orders import Order, OrderUpdate
 from beanie import PydanticObjectId
 from database.connection import Database
+from auth.authenticate import get_current_user
 
 
 Order_router = APIRouter(tags=["Order"])
@@ -25,13 +29,26 @@ async def retrieve_one_mushroom(id: PydanticObjectId) -> Order:
 
 
 @Order_router.post('/')
-async def create_mushroom(body: Order) -> dict:
+async def create_mushroom(current_user: Annotated[User, Depends(get_current_user)], body: Order) -> dict:
+    body.creator = current_user.email
+    mush = await Mushroom.get(body.id_mushrooms)
+    if not mush:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="mush with supplied ID does not exist"
+        )
     await Order_database.save(body)
     return {'message': 'your mushrooms correct create'}
 
 
 @Order_router.put('/{id}', response_model=Order)
-async def update_mushroom(body: OrderUpdate, id: PydanticObjectId) -> Order:
+async def update_mushroom(current_user: Annotated[User, Depends(get_current_user)], body: OrderUpdate, id: PydanticObjectId) -> Order:
+    order = await Order_database.get(id)
+    if order.creator != current_user.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Operation not allowed"
+        )
     update = await Order_database.update(id, body)
     if not update:
         raise HTTPException(
@@ -42,7 +59,13 @@ async def update_mushroom(body: OrderUpdate, id: PydanticObjectId) -> Order:
 
 
 @Order_router.delete('/{id}')
-async def delete_mushroom(id: PydanticObjectId) -> dict:
+async def delete_mushroom(current_user: Annotated[User, Depends(get_current_user)], id: PydanticObjectId) -> dict:
+    order = await Order_database.get(id)
+    if current_user.email != order.creator:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Operation not allowed"
+        )
     delete = await Order_database.delete(id)
     if delete:
         return {'message': 'your mushrooms correct delete'}

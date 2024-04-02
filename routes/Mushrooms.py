@@ -4,15 +4,11 @@ from models.Mushrooms import Mushroom, MushroomUpdate
 from models.Users import User
 from beanie import PydanticObjectId
 from database.connection import Database
-from fastapi.responses import FileResponse
 import io
 import torch.nn as nn
 import torch
 from torchvision import models, transforms
 from auth.authenticate import get_current_user
-import numpy as np
-import matplotlib.pyplot as plt
-import base64
 from PIL import Image
 
 
@@ -27,7 +23,6 @@ class ToRGB(object):
             pic = pic.convert('RGB')
         return pic
 
-
 @mushrooms_router.get("/", response_model=list[Mushroom])
 async def retrieve_all_mushroom() -> list[Mushroom]:
     return await mushrooms_database.get_all()
@@ -36,8 +31,6 @@ async def retrieve_all_mushroom() -> list[Mushroom]:
 @mushrooms_router.get("/mushroom", response_model=list[Mushroom])
 async def retrieve_one_mushroom(current_user: Annotated[User, Depends(get_current_user)]) -> list[Mushroom]:
     mushroom = await Mushroom.find({'creator': current_user.email}).to_list()
-    print(mushroom)
-
     if not mushroom:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -45,7 +38,15 @@ async def retrieve_one_mushroom(current_user: Annotated[User, Depends(get_curren
         )
     return mushroom
 
-
+@mushrooms_router.get("/{id}", response_model=Mushroom)
+async def retrieve_one_mushroom(id: PydanticObjectId) -> Mushroom:
+    mushroom = await mushrooms_database.get(id)
+    if not mushroom:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="mushroom with supplied ID does not exist"
+        )
+    return mushroom
 @mushrooms_router.post('/')
 async def create_mushroom(current_user: Annotated[User, Depends(get_current_user)], name: str = Form(...),
                           price: int = Form(...), description: str = Form(...), image: UploadFile = File(...)):
@@ -101,7 +102,14 @@ async def create_mushroom(current_user: Annotated[User, Depends(get_current_user
 
 
 @mushrooms_router.put('/{id}', response_model=Mushroom)
-async def update_mushroom(body: MushroomUpdate, id: PydanticObjectId) -> Mushroom:
+async def update_mushroom(current_user: Annotated[User, Depends(get_current_user)], body: MushroomUpdate,
+                          id: PydanticObjectId) -> Mushroom:
+    mush = await mushrooms_database.get(id)
+    if mush.creator != current_user.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Operation not allowed"
+        )
     update = await mushrooms_database.update(id, body)
     if not update:
         raise HTTPException(
@@ -112,7 +120,13 @@ async def update_mushroom(body: MushroomUpdate, id: PydanticObjectId) -> Mushroo
 
 
 @mushrooms_router.delete('/{id}')
-async def delete_mushroom(id: PydanticObjectId) -> dict:
+async def delete_mushroom(current_user: Annotated[User, Depends(get_current_user)], id: PydanticObjectId) -> dict:
+    mush = await mushrooms_database.get(id)
+    if mush.creator != current_user.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Operation not allowed"
+        )
     delete = await mushrooms_database.delete(id)
     if delete:
         return {'message': 'your mushrooms correct delete'}

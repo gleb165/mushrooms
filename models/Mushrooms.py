@@ -26,7 +26,7 @@ class MushroomUpdate(BaseModel):
         json_schema_extra = {
             "example": {
                 "name": "name!!!",
-                "price": "1234!!!",
+                "price": 10,
                 "description": "description your mushroom",
             }
         }
