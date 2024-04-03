@@ -1,12 +1,12 @@
-from typing import Any, List, Optional
+
 from beanie import init_beanie, PydanticObjectId
 from models.Mushrooms import Mushroom
 from models.Users import User
 from models.Orders import Order
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic_settings import BaseSettings
-from pydantic import BaseModel
-from pymongo import MongoClient
+from pydantic import BaseModel,EmailStr
+
 
 
 class Settings(BaseSettings):
@@ -32,6 +32,19 @@ class Database:
         if doc:
             return doc
         return False
+
+    async def get_user(self, email: EmailStr) -> any:
+        doc = await self.model.find_one({"email": email})
+        if doc:
+            return doc
+        return False
+
+    async def delete_user(self, email: EmailStr) -> bool:
+        doc = await self.model.find_one({"email": email})
+        if not doc:
+            return False
+        await doc.delete()
+        return True
 
     async def get_all(self) -> list[any]:
         docs = await self.model.find_all().to_list()

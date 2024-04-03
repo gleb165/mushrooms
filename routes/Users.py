@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from models.Users import User, Token
-from beanie import PydanticObjectId
 from database.connection import Database
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Annotated
@@ -38,9 +37,9 @@ async def retrieve_all_mushroom() -> list[User]:
     return await user_database.get_all()
 
 
-@user_router.get("/{id}", response_model=User)
-async def retrieve_one_mushroom(id: PydanticObjectId) -> User:
-    mushroom = await user_database.get(id)
+@user_router.get("/{email}", response_model=User)
+async def retrieve_one_user(email: EmailStr) -> User:
+    mushroom = await user_database.get_user(email)
     if not mushroom:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -50,8 +49,8 @@ async def retrieve_one_mushroom(id: PydanticObjectId) -> User:
 
 
 @user_router.delete('/{id}')
-async def delete_mushroom(id: PydanticObjectId) -> dict:
-    delete = await user_database.delete(id)
+async def delete_user(email: EmailStr) -> dict:
+    delete = await user_database.delete_user(email)
     if delete:
         return {'message': 'your mushrooms correct delete'}
     raise HTTPException(
@@ -69,7 +68,7 @@ async def authenticate_user(User, email: EmailStr, password: str):
 
 
 @user_router.post('/')
-async def create_mushroom(body: User) -> dict:
+async def create_user(body: User) -> dict:
     user_exist = await User.find_one(User.email == body.email)
 
     if user_exist:

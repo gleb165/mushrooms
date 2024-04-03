@@ -29,8 +29,8 @@ async def init_db():
 # Register routes
 
 app.include_router(user_router,  prefix="/user")
-app.include_router(mushrooms_router, prefix="/order")
-app.include_router(Order_router, prefix="/mushroom")
+app.include_router(mushrooms_router, prefix="/mushroom")
+app.include_router(Order_router, prefix="/order")
 
 
 

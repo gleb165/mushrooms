@@ -13,12 +13,20 @@ Order_database = Database(Order)
 
 
 @Order_router.get("/", response_model=list[Order])
-async def retrieve_all_mushroom() -> list[Order]:
+async def retrieve_all_order() -> list[Order]:
     return await Order_database.get_all()
 
-
+@Order_router.get("/order", response_model=list[Order])
+async def retrieve_one_order(current_user: Annotated[User, Depends(get_current_user)]) -> list[Order]:
+    ord = await Order.find({'creator': current_user.email}).to_list()
+    if not ord:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="mushroom with supplied ID does not exist"
+        )
+    return ord
 @Order_router.get("/{id}", response_model=Order)
-async def retrieve_one_mushroom(id: PydanticObjectId) -> Order:
+async def retrieve_one_order(id: PydanticObjectId) -> Order:
     mushroom = await Order_database.get(id)
     if not mushroom:
         raise HTTPException(
@@ -29,7 +37,7 @@ async def retrieve_one_mushroom(id: PydanticObjectId) -> Order:
 
 
 @Order_router.post('/')
-async def create_mushroom(current_user: Annotated[User, Depends(get_current_user)], body: Order) -> dict:
+async def create_order(current_user: Annotated[User, Depends(get_current_user)], body: Order) -> dict:
     body.creator = current_user.email
     mush = await Mushroom.get(body.id_mushrooms)
     if not mush:
@@ -42,7 +50,7 @@ async def create_mushroom(current_user: Annotated[User, Depends(get_current_user
 
 
 @Order_router.put('/{id}', response_model=Order)
-async def update_mushroom(current_user: Annotated[User, Depends(get_current_user)], body: OrderUpdate, id: PydanticObjectId) -> Order:
+async def update_order(current_user: Annotated[User, Depends(get_current_user)], body: OrderUpdate, id: PydanticObjectId) -> Order:
     order = await Order_database.get(id)
     if order.creator != current_user.email:
         raise HTTPException(
@@ -59,7 +67,7 @@ async def update_mushroom(current_user: Annotated[User, Depends(get_current_user
 
 
 @Order_router.delete('/{id}')
-async def delete_mushroom(current_user: Annotated[User, Depends(get_current_user)], id: PydanticObjectId) -> dict:
+async def delete_order(current_user: Annotated[User, Depends(get_current_user)], id: PydanticObjectId) -> dict:
     order = await Order_database.get(id)
     if current_user.email != order.creator:
         raise HTTPException(
