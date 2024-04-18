@@ -8,7 +8,7 @@ import io
 import torch.nn as nn
 import torch
 from torchvision import models, transforms
-from auth.authenticate import get_current_user
+from auth.authenticate import get_current_user, get_current_active_user
 from PIL import Image
 
 
@@ -136,6 +136,15 @@ async def delete_mushroom(current_user: Annotated[User, Depends(get_current_user
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Operation not allowed"
         )
+    delete = await mushrooms_database.delete(id)
+    if delete:
+        return {'message': 'your mushrooms correct delete'}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="mushroom with supplied ID does not exist")
+
+@mushrooms_router.delete('/admin/{id}')
+async def delete_order(current_user_ad: Annotated[User, Depends(get_current_active_user)], id: PydanticObjectId):
     delete = await mushrooms_database.delete(id)
     if delete:
         return {'message': 'your mushrooms correct delete'}

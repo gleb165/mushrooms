@@ -7,10 +7,10 @@ from passlib.context import CryptContext
 from auth.hash_password import HashPassword
 from auth.jwt_handler import create_access_token
 from datetime import timedelta
-from auth.authenticate import get_current_user, get_current_active_user
+from auth.authenticate import  get_current_active_user
 from email_send_der.send_email import send_message_email
 from email_send_der.change_password import send_message_email_for_change_password
-from beanie import PydanticObjectId
+
 
 from pydantic import EmailStr
 
@@ -73,7 +73,7 @@ async def authenticate_user(User, email: EmailStr, password: str):
     return user
 
 @user_router.get('/{email}/{password}')
-async def verification_user(email: EmailStr, password: str) -> dict:
+async def verification_user_email(email: EmailStr, password: str) -> dict:
     user_old = await user_database.get_user(email)
     if not user_old:
         return {'message': 'not correct link'}

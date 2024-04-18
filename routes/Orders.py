@@ -80,3 +80,11 @@ async def delete_order(current_user: Annotated[User, Depends(get_current_user)],
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="mushroom with supplied ID does not exist")
+@Order_router.delete('/admin/{id}')
+async def delete_order(current_user_ad: Annotated[User, Depends(get_current_active_user)], id: PydanticObjectId):
+    delete = await Order_database.delete(id)
+    if delete:
+        return {'message': 'your mushrooms correct delete'}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="mushroom with supplied ID does not exist")
