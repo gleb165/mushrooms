@@ -29,7 +29,7 @@ async def retrieve_all_mushroom() -> list[Mushroom]:
 
 
 @mushrooms_router.get("/mushroom", response_model=list[Mushroom])
-async def retrieve_one_mushroom(current_user: Annotated[User, Depends(get_current_user)]) -> list[Mushroom]:
+async def retrieve_user_mushroom(current_user: Annotated[User, Depends(get_current_user)]) -> list[Mushroom]:
     mushroom = await Mushroom.find({'creator': current_user.email}).to_list()
     if not mushroom:
         raise HTTPException(
@@ -37,6 +37,15 @@ async def retrieve_one_mushroom(current_user: Annotated[User, Depends(get_curren
             detail="mushroom with supplied ID does not exist"
         )
     return mushroom
+@mushrooms_router.get('/mushroom_by_name', response_model=list[Mushroom])
+async def retrieve_mushrooms_by_name(name: str) -> list[Mushroom]:
+    mush = await mushrooms_database.get_mushroom_by_data(name)
+    if not mush:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="mushroom with supplied ID does not exist"
+        )
+    return mush
 
 @mushrooms_router.get("/{id}", response_model=Mushroom)
 async def retrieve_one_mushroom(id: PydanticObjectId) -> Mushroom:

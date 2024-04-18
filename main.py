@@ -8,6 +8,14 @@ from database.connection import Settings
 
 from fastapi.middleware.cors import CORSMiddleware
 
+#add in projdect payment - ?
+#add predict price for mushrooms
+#email send if user create, change password
+# Предоставьте покупателям возможность просматривать и !
+# искать грибы, добавлять их в корзину и !
+# совершать безопасные покупки. - ?
+# Внедрите  систему отслеживания и выполнения заказов. - ?
+
 
 origins = ["*"]
 

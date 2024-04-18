@@ -6,6 +6,7 @@ class User(Document):
     email: EmailStr
     password: str
     role: bool | None = None
+    verified: bool | None = None
 
     class Config:
         json_schema_extra = {
@@ -17,6 +18,11 @@ class User(Document):
 
     class Settings:
         name = "users"
+
+
+class UserUpdate(BaseModel):
+    email: EmailStr | None = None
+    password: str | None = None
 
 
 class Token(BaseModel):

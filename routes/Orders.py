@@ -5,7 +5,7 @@ from models.Mushrooms import Mushroom
 from models.Orders import Order, OrderUpdate
 from beanie import PydanticObjectId
 from database.connection import Database
-from auth.authenticate import get_current_user
+from auth.authenticate import get_current_user, get_current_active_user
 
 
 Order_router = APIRouter(tags=["Order"])
@@ -13,7 +13,7 @@ Order_database = Database(Order)
 
 
 @Order_router.get("/", response_model=list[Order])
-async def retrieve_all_order() -> list[Order]:
+async def retrieve_all_order(current_user: Annotated[User, Depends(get_current_active_user)]) -> list[Order]:
     return await Order_database.get_all()
 
 @Order_router.get("/order", response_model=list[Order])
@@ -26,7 +26,7 @@ async def retrieve_one_order(current_user: Annotated[User, Depends(get_current_u
         )
     return ord
 @Order_router.get("/{id}", response_model=Order)
-async def retrieve_one_order(id: PydanticObjectId) -> Order:
+async def retrieve_one_order(id: PydanticObjectId, current_user: Annotated[User, Depends(get_current_active_user)]) -> Order:
     mushroom = await Order_database.get(id)
     if not mushroom:
         raise HTTPException(
